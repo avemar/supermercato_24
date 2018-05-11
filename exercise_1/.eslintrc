@@ -7,7 +7,6 @@
         "max-len": ["error", 120],
         "max-len-2/max-len-2": ["warn", 80],
         "indent": ["error", 4],
-        "prefer-template": "off",
         "comma-dangle": ["error", {
             "arrays": "always-multiline",
             "objects": "always-multiline",
@@ -15,8 +14,6 @@
             "exports": "never",
             "functions": "ignore"
         }],
-        "object-shorthand": "off",
-        "no-plusplus": "off",
         "linebreak-style": "off"
     }
 }
