@@ -28,7 +28,6 @@
     },
     "scripts": {
         "build": "webpack --config webpack.config.js --mode production --progress --colors",
-        "test": "jest --colors --runInBand --coverage",
-        "try": "require('./src/modules/reverse_binary/app/use_case.js').useCase()"
+        "test": "jest --colors --runInBand --coverage"
     }
 }
