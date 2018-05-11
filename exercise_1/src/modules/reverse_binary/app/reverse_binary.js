@@ -9,7 +9,7 @@
  */
 function isNatural(num) {
     const pattern = /^\d+$/;
-    const stringifiedNum = num + '';
+    const stringifiedNum = `${num}`;
 
     return stringifiedNum.match(pattern);
 }
