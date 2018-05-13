@@ -26,41 +26,63 @@ class FS
 
     public function addPath(string $path)
     {
-        $parsedPath = $this->parsePath($path);
+        $pathData = $this->getPathData($path);
 
-        if ($this->hashTableKeyExists($path)) {
+        if ($pathData['path_exists'] === true) {
             return;
         }
 
-        $tempPath = [];
+        foreach ($pathData['parsed_path'] as $dir) {
+            $pathData['temp_path'][] = $dir;
 
-        if (!$this->isRoot) {
-            $tempPath = $this->getCurrentPosition('array');
-        }
-
-        foreach ($parsedPath as $dir) {
-            $tempPath[] = $dir;
-
-            if ($this->hashTableKeyExists($this->stringifyPath($tempPath))) {
+            if ($this->hashTableKeyExists(
+                    $this->stringifyPath($pathData['temp_path'])
+                )
+            ) {
                 continue;
             }
 
-            $this->insertDir($tempPath);
+            $this->insertDir($pathData['temp_path']);
         }
-        var_dump($this->isRoot);
     }
 
     public function cd(string $path)
     {
-        $parsedPath = $this->parsePath($path);
+        $pathData = $this->getPathData($path, true);
 
-        if ($this->isRoot) {
-            // Fix is root case (check for existing / valid path)
-            $this->setCurrentPosition($this->dirIndex, $this->delimiter);
+        if ($pathData['path_exists'] === true) {
+            $stringifiedPath = $this->stringifyPath(
+                array_merge($pathData['temp_path'], $pathData['parsed_path'])
+            );
+            $this->setCurrentPosition(
+                $this->getHashTableElem($stringifiedPath),
+                $stringifiedPath
+            );
+
+            return;
         }
 
-        // Create non root case
-        // DONE!
+        if (!in_array('..', $pathData['parsed_path'], true)) {
+            throw new \Exception('This path does not exist');
+        }
+
+        foreach ($pathData['parsed_path'] as $dir) {
+            if ($dir === '..') {
+                array_pop($pathData['temp_path']);
+                $nextDirIndex = $this->getCurrentPosition('parent');
+                $stringifiedPath = $this->getPathFromDirIndex($nextDirIndex);
+            } else {
+                $pathData['temp_path'][] = $dir;
+                $stringifiedPath = $this->stringifyPath($pathData['temp_path']);
+                if (!$this->hashTableKeyExists($stringifiedPath)) {
+                    throw new \Exception('This path does not exist');
+                }
+
+                $nextDirIndex = $this->getHashTableElem($stringifiedPath);
+            }
+
+            $this->setCurrentPosition($nextDirIndex, $stringifiedPath);
+        }
     }
 
     public function getCurrentPath()
@@ -77,10 +99,37 @@ class FS
         ];
     }
 
+    private function getPathData(string $path, bool $isCd = false): array
+    {
+        $tempPath = [];
+        $parsedPath = $this->parsePath($path, $isCd);
+
+        if (!$this->isRoot) {
+            $tempPath = $this->getCurrentPosition('array');
+        }
+
+        $stringifiedPath = $this->stringifyPath(
+            array_merge($tempPath, $parsedPath)
+        );
+
+        $returnData = [
+            'path_exists' => true,
+            'parsed_path' => $parsedPath,
+            'temp_path' => $tempPath,
+        ];
+
+        if ($this->hashTableKeyExists($stringifiedPath)) {
+            return $returnData;
+        }
+
+        $returnData['path_exists'] = false;
+        return $returnData;
+    }
+
     private function setDelimiter(string $delimiter)
     {
         if (!$this->isDelimiterValid($delimiter)) {
-            throw new Exception('Delimiter "' . $delimiter . '" is invalid');
+            throw new \Exception('Delimiter "' . $delimiter . '" is invalid');
         }
 
         $this->delimiter = $delimiter;
@@ -104,7 +153,9 @@ class FS
 
     private function createRoot()
     {
-        $this->insertDir([$this->delimiter]);
+        $this->insertDir([
+            $this->delimiter,
+        ]);
     }
 
     private function insertDir(array $path)
@@ -159,19 +210,31 @@ class FS
         $this->hashTable[$path] = $index;
     }
 
+    private function getPathFromDirIndex(int $index): string
+    {
+        return array_flip($this->hashTable)[$index];
+    }
+
     private function parsePath(string $path, bool $isCd = false): array
     {
         $this->isRoot = false;
         $dirs = explode($this->delimiter, $path);
 
         if (isset($dirs[0]) && $dirs[0] === '') {
+
             $this->isRoot = true;
             array_shift($dirs);
+
+            if ($isCd && count($dirs) === 1 && $dirs[0] === '') {
+                return [
+                    '/',
+                ];
+            }
         }
 
         foreach ($dirs as $dir) {
             if (!$this->isValidDirName($dir, $isCd)) {
-                throw new Exception('directory name "' . $dir . '" is invalid');
+                throw new \Exception('directory name "' . $dir . '" is invalid');
             }
         }
 
@@ -203,6 +266,9 @@ class FS
             case 'directory':
                 return $this->pathTreeList[$this->currentPosition['dir_index']]['name'];
 
+            case 'parent':
+                return $this->pathTreeList[$this->currentPosition['dir_index']]['parent'];
+
             case 'array':
                 if ($this->currentPosition['hash_table_key'] === $this->delimiter) {
                     return [];
@@ -215,7 +281,7 @@ class FS
 
             default:
                 $path = [
-                    $this->currentPosition['hash_table_key']
+                    $this->currentPosition['hash_table_key'],
                 ];
 
                 if ($path[0] !== $this->delimiter) {

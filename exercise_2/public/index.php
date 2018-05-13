@@ -11,6 +11,12 @@ $Path = new Path([
     'first/eighth',
 ]);
 
+$Path->cd();
+$Path->cd('../../fourth/fifth');
+$Path->addPaths(['ninth/tenth', '/eleventh']);
+$Path->cd('ninth');
+$Path->cd('../../fifth/sixth');
+$Path->cd('/');
 echo '<pre>' . print_r($Path->getFSData(), true) . '</pre>';
 
 echo '<h1>' . $Path->currentPath() . '</h1>';

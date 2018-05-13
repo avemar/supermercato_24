@@ -10,16 +10,32 @@ class Path
 
     public function __construct(array $paths = [], string $delimiter = '/')
     {
-        $this->fileSystem = new FS($delimiter);
+        try {
+            $this->fileSystem = new FS($delimiter);
+        } catch (\Exception $e) {
+            echo $e;
+        }
+        $this->addPaths($paths);
+    }
 
-        foreach ($paths as $path) {
-            $this->fileSystem->addPath($path);
+    public function cd(string $path = '/')
+    {
+        try {
+            $this->fileSystem->cd($path);
+        } catch (\Exception $e) {
+            echo $e;
         }
     }
 
-    public function cd(string $path)
+    public function addPaths(array $paths = [])
     {
-        $this->fileSystem->cd($path);
+        foreach ($paths as $path) {
+            try {
+                $this->fileSystem->addPath($path);
+            } catch (\Exception $e) {
+                echo $e;
+            }
+        }
     }
 
     public function currentPath()
