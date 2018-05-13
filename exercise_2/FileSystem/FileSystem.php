@@ -19,7 +19,7 @@ class FileSystem
         'hash_table_key',
     ];
     private $allowedCharacters = 'a-zA-Z';
-    private $delimiter;
+    private $delimiter = '/';
     private $pathTreeList = [];
     private $hashTable = [];
     private $isRoot = false;
@@ -31,10 +31,14 @@ class FileSystem
      *
      * @param   string  $delimiter (optional)   The delimiter to be used.
      */
-    public function __construct(string $delimiter = '/')
+    public function __construct(string $delimiter = null)
     {
         $this->dirIndex = $this->initialDirIndex;
-        $this->setDelimiter($delimiter);
+
+        if (!is_null($delimiter)) {
+            $this->setDelimiter($delimiter);
+        }
+
         $this->setCurrentPosition($this->dirIndex, $this->delimiter);
         $this->createRoot();
     }
@@ -147,9 +151,19 @@ class FileSystem
     {
         return [
             'position' => $this->currentPosition,
-            'pathTreeList' => $this->pathTreeList,
-            'hashTable' => $this->hashTable,
+            'path_tree_list' => $this->pathTreeList,
+            'hash_table' => $this->hashTable,
         ];
+    }
+
+    /**
+     * Retrieves the delimiter.
+     *
+     * @return  string  The delimiter.
+     */
+    public function getDelimiter(): string
+    {
+        return $this->delimiter;
     }
 
     /**

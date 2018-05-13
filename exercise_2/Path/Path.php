@@ -97,6 +97,16 @@ class Path
     }
 
     /**
+     * Retrieves the delimiter.
+     *
+     * @return  string  The delimiter.
+     */
+    public function getDelimiter(): string
+    {
+        return $this->fileSystem->getDelimiter();
+    }
+
+    /**
      * Retrieves file system internal status. Useful for debugging.
      *
      * @return  array   Array containing file system internal status.
