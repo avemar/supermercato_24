@@ -77,7 +77,7 @@ class PathTest extends TestCase
                     'parent' => 9,
                 ],
             ],
-            $fsData['path_tree_list'],
+            $fsData['path_tree_list']
         );
     }
 
