@@ -1,8 +1,16 @@
 <?php
 
+/**
+ * Basic virtual file system implementation, allowing for directories creation
+ * and navigation only.
+ *
+ * @author  avemar vrsndr@gmail.com
+ * @license WTFPL
+ */
+
 namespace exercise_2\FileSystem;
 
-class FS
+class FileSystem
 {
     private $initialDirIndex = 0;
     private $dirIndex;
@@ -16,7 +24,14 @@ class FS
     private $hashTable = [];
     private $isRoot = false;
 
-    public function __construct(string $delimiter)
+    /**
+     * Constructor. It sets the starting index for new directories, the
+     * delimiter, current position (a pointer to the current selected path /
+     * directory) and takes care to create the root directory.
+     *
+     * @param   string  $delimiter (optional)   The delimiter to be used.
+     */
+    public function __construct(string $delimiter = '/')
     {
         $this->dirIndex = $this->initialDirIndex;
         $this->setDelimiter($delimiter);
@@ -24,6 +39,14 @@ class FS
         $this->createRoot();
     }
 
+    /**
+     * Inserts a single path in the file system. It looks up for existing
+     * paths (avoids duplication) and populates the main data structures:
+     * - the tree containing directories data;
+     * - the hash table for fast lookup.
+     *
+     * @param   string  $path   The path to be inserted.
+     */
     public function addPath(string $path)
     {
         $pathData = $this->getPathData($path);
@@ -46,8 +69,26 @@ class FS
         }
     }
 
-    public function cd(string $path)
+    /**
+     * Changes the position in the file system.
+     * It looks up for existing paths before beginning to parse and checking the
+     * path one directory at a time.
+     * It accepts ".." as a parent directory reference. Once the position is
+     * at the root, subsequent parent references are ignored.
+     *
+     * @param   string  $path (optional)    The absolute or relative destination
+     *                                      path. If not provided it will change
+     *                                      move the position to the root
+     *                                      directory.
+     *
+     * @throws  \Exception                  If path doesn't exist.
+     */
+    public function cd(string $path = null)
     {
+        if (is_null($path)) {
+            $path = $this->delimiter;
+        }
+
         $pathData = $this->getPathData($path, true);
 
         if ($pathData['path_exists'] === true) {
@@ -74,6 +115,7 @@ class FS
             } else {
                 $pathData['temp_path'][] = $dir;
                 $stringifiedPath = $this->stringifyPath($pathData['temp_path']);
+
                 if (!$this->hashTableKeyExists($stringifiedPath)) {
                     throw new \Exception('This path does not exist');
                 }
@@ -85,11 +127,22 @@ class FS
         }
     }
 
-    public function getCurrentPath()
+    /**
+     * Retrieves the current full path string representation.
+     *
+     * @return  string  Current path.
+     */
+    public function getCurrentPath(): string
     {
         return $this->getCurrentPosition();
     }
 
+    /**
+     * Retrieves file system internal status.
+     *
+     * @return  array   Array containing file system internal status (current
+     *                  position, directories tree and hash table).
+     */
     public function getDebugData(): array
     {
         return [
@@ -99,6 +152,21 @@ class FS
         ];
     }
 
+    /**
+     * Performs the initial parsing, validation and path existence check at the
+     * beginning of main commands (addPath() and cd()).
+     *
+     * @param   string  $path               The absolute or relative destination
+     *                                      path.
+     *
+     * @param   bool    $isCd (optional)    Whether it's called by cd command or
+     *                                      not.
+     *
+     * @return  array   $returnData         Array containing data about the path
+     *                                      (if it already exists, the parsed
+     *                                      and validated path and the temporary
+     *                                      path).
+     */
     private function getPathData(string $path, bool $isCd = false): array
     {
         $tempPath = [];
@@ -126,6 +194,13 @@ class FS
         return $returnData;
     }
 
+    /**
+     * Validates and sets the delimiter.
+     *
+     * @param   string  $delimiter          The delimiter.
+     *
+     * @throws  \Exception                  If the delimiter is not allowed.
+     */
     private function setDelimiter(string $delimiter)
     {
         if (!$this->isDelimiterValid($delimiter)) {
@@ -135,6 +210,13 @@ class FS
         $this->delimiter = $delimiter;
     }
 
+    /**
+     * Validates the delimiter.
+     *
+     * @param   string  $delimiter          The delimiter.
+     *
+     * @return  bool
+     */
     private function isDelimiterValid(string $delimiter): bool
     {
         return preg_match(
@@ -143,6 +225,14 @@ class FS
         ) !== 1;
     }
 
+    /**
+     * Sets the current position structure (directories tree index and
+     * corresponding hash table key).
+     *
+     * @param   int     $dirIndex       Directories tree index.
+     *
+     * @param   string  $hashTableKey   Hash table key.
+     */
     private function setCurrentPosition(int $dirIndex, string $hashTableKey)
     {
         $this->currentPosition = [
@@ -151,6 +241,9 @@ class FS
         ];
     }
 
+    /**
+     * Creates the root directory.
+     */
     private function createRoot()
     {
         $this->insertDir([
@@ -158,6 +251,13 @@ class FS
         ]);
     }
 
+    /**
+     * Inserts a new directory in both main structures.
+     * It gets the specific directory from the entire path (the last element),
+     * and then increments the index for subsequent insertions.
+     *
+     * @param   array   $path   Array containing the path segments.
+     */
     private function insertDir(array $path)
     {
         $this->addPathTreeListElem(
@@ -169,6 +269,15 @@ class FS
         $this->dirIndex++;
     }
 
+    /**
+     * Inserts a new directory into the directories tree.
+     *
+     * @param   int     $key        The new directory unique index.
+     *
+     * @param   string  $dirName    The name of the new directory.
+     *
+     * @param   int     $parentKey  The index of new directory's parent.
+     */
     private function addPathTreeListElem(
         int $key,
         string $dirName,
@@ -177,14 +286,30 @@ class FS
         $this->pathTreeList[$key] = [
             'name' => $dirName,
             'parent' => $parentKey,
+            // This structure could contain further data
         ];
     }
 
+    /**
+     * Gets the current directory name from an array containing path segments.
+     *
+     * @param   array   $path       Array containing path segments.
+     *
+     * @return  string              The name of the directory.
+     */
     private function getDirNameFromPath(array $path): string
     {
         return array_values(array_slice($path, -1))[0];
     }
 
+    /**
+     * Gets the parent directory index, starting from an array containing path
+     * segments.
+     *
+     * @param   array   $path       Array containing path segments.
+     *
+     * @return  int                 Parent directory index.
+     */
     private function getParentDirKey(array $path): int
     {
         if (count($path) === 1) {
@@ -195,26 +320,70 @@ class FS
         return $this->getHashTableElem($this->stringifyPath($path));
     }
 
+    /**
+     * Checks for path existence.
+     *
+     * @param   string  $path   String representation of a full path.
+     *
+     * @return  bool
+     */
     private function hashTableKeyExists(string $path): bool
     {
         return array_key_exists($path, $this->hashTable);
     }
 
+    /**
+     * Gets the last path segment corresponding index.
+     *
+     * @param   string  $path   String representation of a full path.
+     *
+     * @return  int             The directory index.
+     */
     private function getHashTableElem(string $path): int
     {
         return $this->hashTable[$path];
     }
 
+    /**
+     * Creates a new entry into the hash table. Path will be the key and the
+     * directories tree index will be the value.
+     *
+     * @param   string  $path   String representation of a full path.
+     *
+     * @param   int     $index  The directory index.
+     */
     private function addHashTableElem(string $path, int $index)
     {
         $this->hashTable[$path] = $index;
     }
 
+    /**
+     * Retrieves a full path from a directory index.
+     *
+     * @param   int     $index  The directory index.
+     *
+     * @param   string          Corresponding full path.
+     */
     private function getPathFromDirIndex(int $index): string
     {
         return array_flip($this->hashTable)[$index];
     }
 
+    /**
+     * Parses and validates a path. It detects if a path is absolute or relative
+     * and if it's called from cd() it relaxes checks (delimiter and empty paths
+     * are valid in this case).
+     *
+     * @param   string  $path               Path to be parsed.
+     *
+     * @param   bool    $isCd (optional)    Whether it's called by cd command or
+     *                                      not.
+     *
+     * @throws \Exception                   If directory name is not allowed.
+     *
+     * @return  array   $dirs               Array containing parsed path
+     *                                      segments.
+     */
     private function parsePath(string $path, bool $isCd = false): array
     {
         $this->isRoot = false;
@@ -227,7 +396,7 @@ class FS
 
             if ($isCd && count($dirs) === 1 && $dirs[0] === '') {
                 return [
-                    '/',
+                    $this->delimiter,
                 ];
             }
         }
@@ -241,6 +410,17 @@ class FS
         return $dirs;
     }
 
+    /**
+     * Validates the directory name. If it's called from cd() it allows parent
+     * reference ("..").
+     *
+     * @param   string  $dir                Name of directory.
+     *
+     * @param   bool    $isCd (optional)    Whether it's called by cd command or
+     *                                      not.
+     *
+     * @return  bool
+     */
     private function isValidDirName(string $dir, bool $isCd = false): bool
     {
         $pattern = '/^[' . $this->allowedCharacters . ']{1,200}$/';
@@ -255,11 +435,29 @@ class FS
         ) === 1;
     }
 
+    /**
+     * Creates a string representation of an array containing path segments.
+     *
+     * @param   array   $path               Array containing path segments.
+     *
+     * @return  string                      Path string representation.
+     */
     private function stringifyPath(array $path): string
     {
         return implode($this->delimiter, $path);
     }
 
+    /**
+     * Retrieves the current position. Different formats are possible, according
+     * to $type.
+     * Default format is the string representation of the path, as displayed by
+     * getCurrentPath().
+     *
+     * @param   string  $type (optional)    The requested format of current
+     *                                      position.
+     *
+     * @return  mixed
+     */
     private function getCurrentPosition(string $type = null)
     {
         switch ($type) {
