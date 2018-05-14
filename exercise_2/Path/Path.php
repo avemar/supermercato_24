@@ -33,7 +33,7 @@ class Path
         try {
             $this->fileSystem = new FileSystem($delimiter);
         } catch (\Exception $e) {
-            echo $e;
+            //Handle the exception here!
         }
 
         $this->addPaths($paths);
@@ -55,7 +55,7 @@ class Path
         try {
             $this->fileSystem->cd($path);
         } catch (\Exception $e) {
-            echo $e;
+            //Handle the exception here!
         }
 
         return $this;
@@ -79,7 +79,7 @@ class Path
             try {
                 $this->fileSystem->addPath($path);
             } catch (\Exception $e) {
-                echo $e;
+                //Handle the exception here!
             }
         }
 
