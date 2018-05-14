@@ -1,6 +1,6 @@
 # supermercato_24
 
-Tests are implemented for all exercises. Please be aware that are quite naive and not enough for a real world scenario.
+Tests are implemented for all exercises. Please be aware that are quite naive and definitely not enough for a real world scenario.
 
 Exercise 1
 -------------------
@@ -15,7 +15,7 @@ Main file is ``exercise_1/src/modules/reverse_binary/app/reverse_binary.js``
 
 Exercise 2
 -------------------
-There's no change_directory.php file as requested by the exercise, because this implementation uses a Path and a FileSystem classes. 
+There's no ``change_directory.php`` file as requested by the exercise, because this implementation uses a Path and a FileSystem classes. 
 Main files are ``exercise_2/FileSystem/FileSystem.php`` and ``exercise_2/Path/Path``.
 
 - Be sure to have composer and at least PHP 7.2.4 installed;
@@ -25,7 +25,7 @@ Main files are ``exercise_2/FileSystem/FileSystem.php`` and ``exercise_2/Path/Pa
 
 There is a ``public`` dir in order to quickly test the code with your favourite web server.
 
-Main concern because of lack of time is that low level implementation of FileSystem is tightly coupled with hig level commands and manipulation. Ideally the main data structures (the directories tree and the hash table) should implement a simple interface and be completely black-boxed.
+Main concern because of lack of time is that low level implementation of FileSystem is tightly coupled with high level commands and manipulation. Ideally the main data structures (the directories tree and the hash table) should implement a simple interface and be completely black-boxed.
 
 
 Exercise 3
