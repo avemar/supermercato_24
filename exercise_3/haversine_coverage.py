@@ -15,7 +15,7 @@ class CoverageMockData:
             'zip_code': ''.join(random.choice(string.digits) for x in range(5)),
             'lat': random.uniform(-1, 1) * cls.LAT_MAX_VAL,
             'lng': random.uniform(-1, 1) * cls.LONG_MAX_VAL,
-        } for x in range(10)]
+        } for x in range(150)]
 
     @classmethod
     def get_shoppers(cls):
@@ -24,7 +24,7 @@ class CoverageMockData:
             'enabled': True,
             'lat': random.uniform(-1, 1) * cls.LAT_MAX_VAL,
             'lng': random.uniform(-1, 1) * cls.LONG_MAX_VAL,
-        } for x in range(10)]
+        } for x in range(1000)]
 
     @staticmethod
     def haversine(lat1, lng1, lat2, lng2):
@@ -33,34 +33,43 @@ class CoverageMockData:
 class Coverage:
     MAX_RADIUS = 10.0
 
-    def is_covered(self, shopper_lat, shopper_lng, location_lat, location_lng)
+    @classmethod
+    def is_covered(cls, shopper_lat, shopper_lng, location_lat, location_lng):
         distance = CoverageMockData.haversine(shopper_lat, shopper_lng,
                                               location_lat, location_lng)
 
-        return distance <= self.MAX_RADIUS
+        return distance <= cls.MAX_RADIUS
 
     @classmethod
     def calculate_coverage(cls):
-        locations = CoverageMockData.get_locations();
+        locations = CoverageMockData.get_locations()
+        """shoppers = CoverageMockData.get_shoppers()"""
         shoppers = sorted(CoverageMockData.get_shoppers(),
                           key=lambda k: k['id']);
         locations_length = len(locations)
-        locations_covered = {}
-        coverage = []
+        locations_per_shopper = {}
         current_shopper = None
 
         for shopper in shoppers:
-            if (current_shopper)
-            locations_covered = 0
-            for location in locations:
-                if (self.is_covered(shopper['lat'], shopper['lng'],
-                                    location['lat'], location['lng'])):
-                    locations_covered[shopper['id']] += 1
-                    coverage.append({
-                        'id': shopper['id'], 'coverage': locations_length
-                    })
+            if shopper['id'] != current_shopper:
+                current_shopper = shopper['id']
+                temp_locations = locations
+            if shopper['id'] not in locations_per_shopper:
+                locations_per_shopper[shopper['id']] = 0
 
+            for index, location in reversed(temp_locations):
+                if (cls.is_covered(shopper['lat'], shopper['lng'],
+                                    location['lat'], location['lng'])):
+                    locations_per_shopper[shopper['id']] += 1
+                    temp_locations.pop(index)
+
+
+        print(sorted([{
+            'id': shopper_id,
+            'coverage': round((locations / locations_length) * 100, 2),
+        } for shopper_id, locations in locations_per_shopper.items()],
+        key=lambda k: k['coverage'], reverse=True))
 
 
 if __name__ == '__main__':
-    Coverage.test()
+    Coverage.calculate_coverage()
