@@ -1,0 +1,11 @@
+{
+    "autoload": {
+        "psr-4": {
+            "exercise_2\\Path\\": "Path/",
+            "exercise_2\\FileSystem\\": "FileSystem/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7"
+    }
+}

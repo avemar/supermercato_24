@@ -1,0 +1,19 @@
+{
+    "plugins": [
+        "max-len-2"
+    ],
+    "extends": "airbnb",
+    "rules": {
+        "max-len": ["error", 120],
+        "max-len-2/max-len-2": ["warn", 80],
+        "indent": ["error", 4],
+        "comma-dangle": ["error", {
+            "arrays": "always-multiline",
+            "objects": "always-multiline",
+            "imports": "never",
+            "exports": "never",
+            "functions": "ignore"
+        }],
+        "linebreak-style": "off"
+    }
+}
