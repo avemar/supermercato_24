@@ -18,7 +18,7 @@ class CoverageMockData:
             'zip_code': ''.join(random.choice(string.digits) for x in range(5)),
             'lat': random.uniform(-1, 1) * cls.LAT_MAX_VAL,
             'lng': random.uniform(-1, 1) * cls.LONG_MAX_VAL,
-        } for x in range(10000)]
+        } for x in range(5000)]
 
     @classmethod
     def get_enabled_shoppers(cls):
@@ -26,7 +26,7 @@ class CoverageMockData:
         Return random enabled shoppers
         """
         shoppers = [{
-            'id': 'S{}'.format(random.randint(1, 20)),
+            'id': 'S{}'.format(random.randint(1, 30)),
             'enabled': True if random.random() < 0.5 else False,
             'lat': random.uniform(-1, 1) * cls.LAT_MAX_VAL,
             'lng': random.uniform(-1, 1) * cls.LONG_MAX_VAL,
@@ -47,23 +47,11 @@ class Coverage:
     data_provider = CoverageMockData
 
     @classmethod
-    def is_covered(cls, shopper_lat, shopper_lng, location_lat, location_lng):
-        """
-        Check if a location is covered by a shopper
-        """
-        distance = cls.data_provider.haversine(shopper_lat, shopper_lng,
-                                               location_lat, location_lng)
-
-        return distance <= cls.MAX_RADIUS
-
-    @classmethod
-    def calculate_coverage(cls):
+    def calculate_coverage(cls, locations, shoppers):
         """
         Compute the location coverage percentage for every shopper
         """
-        locations = cls.data_provider.get_locations()
-        shoppers = sorted(cls.data_provider.get_enabled_shoppers(),
-                          key=lambda k: k['id'])
+        shoppers = sorted(shoppers, key=lambda k: k['id'])
 
         if not locations or not shoppers:
             return []
@@ -79,9 +67,9 @@ class Coverage:
                 temp_locations = locations.copy()
 
             for i in range(len(temp_locations)-1, -1, -1):
-                if (cls.is_covered(shopper['lat'], shopper['lng'],
-                                   temp_locations[i]['lat'],
-                                   temp_locations[i]['lng'])):
+                if (cls._is_covered(shopper['lat'], shopper['lng'],
+                                    temp_locations[i]['lat'],
+                                    temp_locations[i]['lng'])):
                     locations_per_shopper[shopper['id']] += 1
                     del temp_locations[i]
 
@@ -92,6 +80,18 @@ class Coverage:
 
         return sorted(coverage, key=lambda k: k['coverage'], reverse=True)
 
+    @classmethod
+    def _is_covered(cls, shopper_lat, shopper_lng, location_lat, location_lng):
+        """
+        Check if a location is covered by a shopper
+        """
+        distance = cls.data_provider.haversine(shopper_lat, shopper_lng,
+                                               location_lat, location_lng)
+
+        return distance <= cls.MAX_RADIUS
+
 
 if __name__ == '__main__':
-    Coverage.calculate_coverage()
+    locations =CoverageMockData.get_locations()
+    shoppers = CoverageMockData.get_enabled_shoppers()
+    Coverage.calculate_coverage(locations, shoppers)
