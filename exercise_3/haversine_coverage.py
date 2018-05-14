@@ -8,6 +8,9 @@ class CoverageMockData:
 
     @classmethod
     def get_locations(cls):
+        """
+        Return random locations
+        """
         area_id = itertools.count(1)
 
         return [{
@@ -15,37 +18,56 @@ class CoverageMockData:
             'zip_code': ''.join(random.choice(string.digits) for x in range(5)),
             'lat': random.uniform(-1, 1) * cls.LAT_MAX_VAL,
             'lng': random.uniform(-1, 1) * cls.LONG_MAX_VAL,
-        } for x in range(150)]
+        } for x in range(10000)]
 
     @classmethod
-    def get_shoppers(cls):
-        return [{
-            'id': 'S{}'.format(random.randint(1, 30)),
-            'enabled': True,
+    def get_enabled_shoppers(cls):
+        """
+        Return random enabled shoppers
+        """
+        shoppers = [{
+            'id': 'S{}'.format(random.randint(1, 20)),
+            'enabled': True if random.random() < 0.5 else False,
             'lat': random.uniform(-1, 1) * cls.LAT_MAX_VAL,
             'lng': random.uniform(-1, 1) * cls.LONG_MAX_VAL,
         } for x in range(1000)]
 
+        return list(filter(lambda d: d['enabled'], shoppers))
+
     @staticmethod
     def haversine(lat1, lng1, lat2, lng2):
-        return random.random() * 100
+        """
+        Calculate the distance between two geographical points
+        """
+        return random.random() * 500
+
 
 class Coverage:
     MAX_RADIUS = 10.0
+    data_provider = CoverageMockData
 
     @classmethod
     def is_covered(cls, shopper_lat, shopper_lng, location_lat, location_lng):
-        distance = CoverageMockData.haversine(shopper_lat, shopper_lng,
-                                              location_lat, location_lng)
+        """
+        Check if a location is covered by a shopper
+        """
+        distance = cls.data_provider.haversine(shopper_lat, shopper_lng,
+                                               location_lat, location_lng)
 
         return distance <= cls.MAX_RADIUS
 
     @classmethod
     def calculate_coverage(cls):
-        locations = CoverageMockData.get_locations()
-        """shoppers = CoverageMockData.get_shoppers()"""
-        shoppers = sorted(CoverageMockData.get_shoppers(),
-                          key=lambda k: k['id']);
+        """
+        Compute the location coverage percentage for every shopper
+        """
+        locations = cls.data_provider.get_locations()
+        shoppers = sorted(cls.data_provider.get_enabled_shoppers(),
+                          key=lambda k: k['id'])
+
+        if not locations or not shoppers:
+            return []
+
         locations_length = len(locations)
         locations_per_shopper = {}
         current_shopper = None
@@ -53,22 +75,22 @@ class Coverage:
         for shopper in shoppers:
             if shopper['id'] != current_shopper:
                 current_shopper = shopper['id']
-                temp_locations = locations
-            if shopper['id'] not in locations_per_shopper:
                 locations_per_shopper[shopper['id']] = 0
+                temp_locations = locations.copy()
 
-            for index, location in reversed(temp_locations):
+            for i in range(len(temp_locations)-1, -1, -1):
                 if (cls.is_covered(shopper['lat'], shopper['lng'],
-                                    location['lat'], location['lng'])):
+                                   temp_locations[i]['lat'],
+                                   temp_locations[i]['lng'])):
                     locations_per_shopper[shopper['id']] += 1
-                    temp_locations.pop(index)
+                    del temp_locations[i]
 
-
-        print(sorted([{
-            'id': shopper_id,
+        coverage = [{
+            'shopper_id': shopper_id,
             'coverage': round((locations / locations_length) * 100, 2),
-        } for shopper_id, locations in locations_per_shopper.items()],
-        key=lambda k: k['coverage'], reverse=True))
+        } for shopper_id, locations in locations_per_shopper.items()]
+
+        return sorted(coverage, key=lambda k: k['coverage'], reverse=True)
 
 
 if __name__ == '__main__':
